@@ -10,7 +10,7 @@ class OrderFeedPageLocators:
     # Заказы
     ORDER_ITEMS = (By.XPATH, "//li[contains(@class, 'OrderHistory_item')]")
     ORDER_ITEM = (By.XPATH, "//li[contains(@class, 'OrderHistory_item')][1]")
-    ORDER_NUMBER = (By.XPATH, "//p[contains(@class, 'OrderHistory_text')]")  # Исправлено
+    ORDER_NUMBER = (By.XPATH, "//p[contains(@class, 'OrderHistory_text')]") 
     
     # Модальное окно заказа
     ORDER_MODAL = (By.XPATH, "//div[contains(@class, 'Modal_modal_opened')]")

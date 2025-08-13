@@ -10,4 +10,4 @@ class LoginPageLocators:
     # Кнопки
     LOGIN_BUTTON = (By.XPATH, "//button[contains(., 'Войти')]")
     REGISTER_LINK = (By.XPATH, "//a[contains(., 'Зарегистрироваться')]")
-    FORGOT_PASSWORD_LINK = (By.XPATH, "//a[contains(., 'Восстановить пароль')]")
+    FORGOT_PASSWORD_LINK = (By.XPATH, "//a[contains(@href, '/forgot-password')]")

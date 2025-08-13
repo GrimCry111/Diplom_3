@@ -14,8 +14,8 @@ class TestMainFunctionality:
         """
         main_page.click_constructor_button()
         
-        # Проверяем, что URL содержит /constructor
-        assert "/constructor" in main_page.get_current_url() or main_page.get_current_url() == "https://stellarburgers.nomoreparties.site/"
+        # Проверяем, что мы на странице конструктора
+        assert main_page.is_on_constructor_page()
     
     @allure.story('Навигация')
     @allure.title('Переход по клику на «Лента заказов»')
@@ -25,8 +25,8 @@ class TestMainFunctionality:
         """
         main_page.click_order_feed_button()
         
-        # Проверяем, что URL содержит /feed
-        assert "/feed" in main_page.get_current_url()
+        # Проверяем, что мы на странице ленты заказов
+        assert main_page.is_on_order_feed_page()
     
     @allure.story('Работа с ингредиентами')
     @allure.title('Если кликнуть на ингредиент, появится всплывающее окно с деталями')

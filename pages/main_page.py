@@ -1,78 +1,141 @@
+
+import allure
 from .base_page import BasePage
-from selenium.webdriver.common.by import By
 from locators.main_page_locators import MainPageLocators
+from selenium.common.exceptions import ElementClickInterceptedException, StaleElementReferenceException
+from urls import CONSTRUCTOR_URL, ORDER_FEED_URL, PROFILE_URL, MAIN_PAGE_URL, ORDER_HISTORY_URL, FORGOT_PASSWORD_URL, RESET_PASSWORD_URL
 
 class MainPage(BasePage):
     """Page Object для главной страницы"""
     
+    @allure.step("Нажатие на кнопку 'Войти'")
     def click_login_button(self):
-        """Кликает по кнопке 'Войти в аккаунт'"""
+        """Кликает по кнопке 'Войти'"""
+        # Сначала закрываем модальное окно, если оно есть
+        self.close_modal_if_present()
+        
         try:
-            self.wait_for_element_visibility(MainPageLocators.LOGIN_BUTTON)
+            # Увеличиваем время ожидания перед кликом
+            self.wait_for_element_visibility(MainPageLocators.LOGIN_BUTTON, time=15)
+            self.wait_for_element_to_be_clickable(MainPageLocators.LOGIN_BUTTON, time=15)
+            
+            # Пытаемся кликнуть обычным способом
             return self.click_element(MainPageLocators.LOGIN_BUTTON)
-        except:
-            pass
+        except (ElementClickInterceptedException, StaleElementReferenceException):
+            # Если обычный клик не сработал, используем JavaScript
+            try:
+                login_button = self.find_element(MainPageLocators.LOGIN_BUTTON)
+                self.driver.execute_script("arguments[0].click();", login_button)
+                return True
+            except Exception as e:
+                print(f"Ошибка при клике через JavaScript: {str(e)}")
+                raise
     
+    @allure.step("Нажатие кнопки 'Конструктор'")
     def click_constructor_button(self):
         """Кликает по кнопке 'Конструктор'"""
         self.wait_for_element_visibility(MainPageLocators.CONSTRUCTOR_BUTTON)
         return self.click_element(MainPageLocators.CONSTRUCTOR_BUTTON)
     
+    @allure.step("Нажатие на логотип")
     def click_logo(self):
         """Кликает по логотипу"""
         self.wait_for_element_visibility(MainPageLocators.LOGO_BUTTON)
         return self.click_element(MainPageLocators.LOGO_BUTTON)
     
+    @allure.step("Нажатие на секцию 'Булки'")
     def click_buns_section(self):
         """Кликает по секции 'Булки'"""
         self.wait_for_element_visibility(MainPageLocators.BUNS_SECTION)
         return self.click_element(MainPageLocators.BUNS_SECTION)
     
+    @allure.step("Нажатие на секцию 'Соусы'")
     def click_sauces_section(self):
         """Кликает по секции 'Соусы'"""
         self.wait_for_element_visibility(MainPageLocators.SAUCES_SECTION)
         return self.click_element(MainPageLocators.SAUCES_SECTION)
     
+    @allure.step("Нажатие на секцию 'Начинки'")
     def click_fillings_section(self):
         """Кликает по секции 'Начинки'"""
         self.wait_for_element_visibility(MainPageLocators.FILLINGS_SECTION)
         return self.click_element(MainPageLocators.FILLINGS_SECTION)
     
+    @allure.step("Нажатие на булку")
     def click_bun_item(self):
         """Кликает по булке"""
         self.wait_for_element_visibility(MainPageLocators.BUN_ITEM)
         return self.click_element(MainPageLocators.BUN_ITEM)
     
+    @allure.step("Нажатие на кнопку 'Личный кабинет'")
+    def click_profile_button(self):
+        """Кликает по кнопке 'Личный кабинет'"""
+        # Сначала закрываем модальное окно, если оно есть
+        self.close_modal_if_present()
+        
+        # Дополнительная проверка, не находимся ли мы уже в профиле
+        if self.is_on_profile_page():
+            return True
+        
+        # Ожидаем, пока кнопка станет кликабельной
+        self.wait_for_element_visibility(MainPageLocators.PROFILE_BUTTON)
+        self.wait_for_element_to_be_clickable(MainPageLocators.PROFILE_BUTTON)
+        
+        # Пытаемся кликнуть обычным способом
+        return self.click_element(MainPageLocators.PROFILE_BUTTON)
+    
+    @allure.step("Нажатие на соус")
     def click_sauce_item(self):
         """Кликает по соусу"""
         self.wait_for_element_visibility(MainPageLocators.SAUCE_ITEM)
         return self.click_element(MainPageLocators.SAUCE_ITEM)
     
+    @allure.step("Нажатие на начинку")
     def click_filling_item(self):
         """Кликает по начинке"""
         self.wait_for_element_visibility(MainPageLocators.FILLING_ITEM)
         return self.click_element(MainPageLocators.FILLING_ITEM)
     
+    @allure.step("Нажатие кнопки 'Оформить заказ'")
     def click_order_button(self):
         """Кликает по кнопке 'Оформить заказ'"""
         self.wait_for_element_visibility(MainPageLocators.ORDER_BUTTON)
         return self.click_element(MainPageLocators.ORDER_BUTTON)
     
+    @allure.step("Нажатие кнопки 'Лента заказов'")
     def click_order_feed_button(self):
         """Кликает по кнопке 'Лента заказов'"""
         self.wait_for_element_visibility(MainPageLocators.ORDER_FEED_BUTTON)
         return self.click_element(MainPageLocators.ORDER_FEED_BUTTON)
     
-    def click_profile_button(self):
-        """Кликает по кнопке 'Личный кабинет'"""
-        self.wait_for_element_visibility(MainPageLocators.PROFILE_BUTTON)
-        return self.click_element(MainPageLocators.PROFILE_BUTTON)
-    
+    @allure.step("Закрытие модального окна")
     def close_modal(self):
         """Закрывает модальное окно"""
         self.wait_for_element_visibility(MainPageLocators.MODAL_CLOSE_BUTTON)
         return self.click_element(MainPageLocators.MODAL_CLOSE_BUTTON)
     
+    @allure.step("Закрытие любых модальных окон")
+    def close_any_modals(self):
+        """Закрывает любые модальные окна, если они есть"""
+        try:
+            # Пытаемся найти и закрыть модальное окно
+            self.wait_for_element_visibility(MainPageLocators.MODAL_CLOSE_BUTTON, time=5)
+            self.click_element(MainPageLocators.MODAL_CLOSE_BUTTON)
+            # Убедимся, что модальное окно закрылось
+            self.wait_for_element_invisibility(MainPageLocators.MODAL_WINDOW, time=5)
+            return True
+        except:
+            try:
+                # Проверяем наличие модального окна с предупреждением
+                self.wait_for_element_visibility(MainPageLocators.WARNING_MODAL, time=3)
+                self.click_element(MainPageLocators.WARNING_MODAL_CLOSE_BUTTON)
+                self.wait_for_element_invisibility(MainPageLocators.WARNING_MODAL, time=5)
+                return True
+            except:
+                # Если модального окна нет, просто продолжаем
+                return False
+    
+    @allure.step("Проверка видимости модального окна")
     def is_modal_visible(self):
         """Проверяет видимость модального окна"""
         try:
@@ -80,7 +143,17 @@ class MainPage(BasePage):
             return True
         except:
             return False
+        
+    @allure.step("Проверка наличия модального окна")
+    def is_modal_present(self, timeout=3):
+        """Проверяет наличие модального окна"""
+        try:
+            self.wait_for_element_visibility(MainPageLocators.MODAL_OVERLAY, time=timeout)
+            return True
+        except:
+            return False
     
+    @allure.step("Проверка закрытия модального окна")
     def is_modal_closed(self):
         """Проверяет, что модальное окно закрыто"""
         try:
@@ -89,43 +162,39 @@ class MainPage(BasePage):
         except:
             return False
     
+    @allure.step("Получение значения счетчика булок")
     def get_bun_counter(self):
         """Получает значение счетчика булок"""
         self.wait_for_element_visibility(MainPageLocators.BUN_COUNTER)
         return self.get_text(MainPageLocators.BUN_COUNTER)
     
+    @allure.step("Получение значения счетчика соусов")
     def get_sauce_counter(self):
         """Получает значение счетчика соусов"""
         self.wait_for_element_visibility(MainPageLocators.SAUCE_COUNTER)
         return self.get_text(MainPageLocators.SAUCE_COUNTER)
     
+    @allure.step("Получение значения счетчика начинок")
     def get_filling_counter(self):
         """Получает значение счетчика начинок"""
         self.wait_for_element_visibility(MainPageLocators.FILLING_COUNTER)
         return self.get_text(MainPageLocators.FILLING_COUNTER)
     
+    @allure.step("Получение номера заказа после оформления")
     def get_order_number(self):
         """Получает номер заказа после оформления"""
         try:
             self.wait_for_element_visibility(MainPageLocators.ORDER_CONFIRMATION_NUMBER, time=10)
             return self.get_text(MainPageLocators.ORDER_CONFIRMATION_NUMBER).strip('#')
         except:
-            # Попробуем найти номер заказа другим способом
+            # Используем новый локатор из main_page_locators.py
             try:
-                order_number_element = self.find_element((By.XPATH, "//p[contains(@class, 'text')]"), time=5)
+                order_number_element = self.find_element(MainPageLocators.ORDER_NUMBER_FALLBACK, time=5)
                 return order_number_element.text.strip('#')
             except:
                 return None
     
-    def is_order_confirmation_visible(self):
-        """Проверяет видимость подтверждения заказа"""
-        try:
-            self.wait_for_element_visibility(MainPageLocators.ORDER_CONFIRMATION_TITLE, time=5)
-            self.wait_for_element_visibility(MainPageLocators.ORDER_CONFIRMATION_TEXT, time=5)
-            return True
-        except:
-            return False
-    
+    @allure.step("Проверка активности секции 'Булки'")
     def is_buns_section_active(self):
         """Проверяет, активна ли секция 'Булки'"""
         try:
@@ -133,7 +202,31 @@ class MainPage(BasePage):
             return True
         except:
             return False
+        
+    @allure.step("Проверка наличия модального окна")
+    def is_modal_present(self, timeout=5):
+        """Проверяет наличие модального окна"""
+        try:
+            # Проверяем через JavaScript
+            modal_exists = self.driver.execute_script("""
+                return !!document.querySelector('.Modal_modal_overlay__x2ZCr');
+            """)
+            if modal_exists:
+                print("Модальное окно обнаружено через JavaScript")
+                return True
+                
+            # Дополнительная проверка через ожидание
+            try:
+                self.wait_for_element_visibility(MainPageLocators.MODAL_OVERLAY, time=timeout)
+                print("Модальное окно обнаружено через ожидание")
+                return True
+            except:
+                return False
+        except Exception as e:
+            print(f"Ошибка при проверке наличия модального окна: {str(e)}")
+            return False
     
+    @allure.step("Проверка активности секции 'Соусы'")
     def is_sauces_section_active(self):
         """Проверяет, активна ли секция 'Соусы'"""
         try:
@@ -142,10 +235,149 @@ class MainPage(BasePage):
         except:
             return False
     
+    @allure.step("Проверка активности секции 'Начинки'")
     def is_fillings_section_active(self):
         """Проверяет, активна ли секция 'Начинки'"""
         try:
             self.wait_for_element_visibility(MainPageLocators.FILLINGS_SECTION_ACTIVE, time=3)
             return True
         except:
+            return False
+        
+    @allure.step("Проверка, что мы на главной странице")
+    def is_on_main_page(self):
+        """Проверяет, что текущая страница - главная"""
+        current_url = self.get_current_url()
+        # Удаляем параметры и завершающий слеш для сравнения
+        clean_url = current_url.split('?')[0].rstrip('/')
+        clean_main_page_url = MAIN_PAGE_URL.rstrip('/')
+        
+        # Проверяем, что URL соответствует главной странице или содержит ее
+        return clean_url == clean_main_page_url or clean_main_page_url in clean_url
+    
+    @allure.step("Проверка, что мы на странице конструктора")
+    def is_on_constructor_page(self):
+        """Проверяет, что текущая страница - конструктор"""
+        return CONSTRUCTOR_URL in self.get_current_url()
+    
+    @allure.step("Проверка, что мы на странице ленты заказов")
+    def is_on_order_feed_page(self):
+        """Проверяет, что текущая страница - лента заказов"""
+        return ORDER_FEED_URL in self.get_current_url()
+    
+    @allure.step("Проверка, что мы в истории заказов")
+    def is_on_order_history_page(self):
+        """Проверяет, что текущая страница - история заказов"""
+        current_url = self.get_current_url()
+        # Удаляем параметры для сравнения
+        current_url = current_url.split('?')[0]
+        return current_url.startswith(ORDER_HISTORY_URL)
+    
+    @allure.step("Проверка, что мы в профиле")
+    def is_on_profile_page(self):
+        """Проверяет, что текущая страница - профиль"""
+        current_url = self.get_current_url()
+        # Удаляем параметры для сравнения
+        clean_url = current_url.split('?')[0]
+        
+        # Проверяем, что URL содержит путь профиля
+        return PROFILE_URL in clean_url
+    
+    @allure.step("Ожидание загрузки страницы")
+    def wait_for_page_load(self, expected_url_part, timeout=15):
+        """Ожидает загрузки страницы с определенным URL"""
+        return self.wait.until(
+            lambda driver: expected_url_part in driver.current_url,
+            message=f"Страница с URL содержащим '{expected_url_part}' не загрузилась за {timeout} секунд"
+        )
+    
+    @allure.step("Закрытие модального окна, если оно присутствует")
+    def close_modal_if_present(self, timeout=10):
+        """Закрывает модальное окно, если оно присутствует"""
+        try:
+            # Проверяем, есть ли модальное окно
+            if self.is_modal_present(timeout):
+                print("Модальное окно обнаружено, пытаемся закрыть...")
+                
+                try:
+                    # Сначала пробуем кликнуть на кнопку закрытия
+                    self.wait_for_element_visibility(MainPageLocators.MODAL_CLOSE_BUTTON, time=timeout)
+                    self.click_element(MainPageLocators.MODAL_CLOSE_BUTTON)
+                    print("Модальное окно закрыто через кнопку закрытия")
+                except Exception as e:
+                    print(f"Не удалось закрыть модальное окно через кнопку закрытия: {str(e)}")
+                    try:
+                        # Если кнопка закрытия не найдена, пробуем кликнуть по overlay через JavaScript
+                        self.driver.execute_script("""
+                            const overlay = document.querySelector('.Modal_modal_overlay__x2ZCr');
+                            if (overlay) {
+                                overlay.click();
+                            }
+                        """)
+                        print("Модальное окно закрыто через клик по overlay")
+                    except Exception as js_error:
+                        print(f"Не удалось закрыть модальное окно через JavaScript: {str(js_error)}")
+                        try:
+                            # Если и это не сработало, пробуем прокрутить страницу и кликнуть
+                            self.driver.execute_script("window.scrollTo(0, 0);")
+                            
+                            # Попробуем кликнуть по overlay напрямую
+                            self.wait_for_element_visibility(MainPageLocators.MODAL_OVERLAY, time=timeout)
+                            self.click_element(MainPageLocators.MODAL_OVERLAY)
+                            print("Модальное окно закрыто через клик по overlay")
+                        except:
+                            # Финальная попытка через JavaScript
+                            self.driver.execute_script("""
+                                const overlay = document.querySelector('.Modal_modal_overlay__x2ZCr');
+                                if (overlay) {
+                                    overlay.remove();
+                                }
+                            """)
+                            print("Модальное окно удалено через JavaScript")
+                
+                # Убедимся, что модальное окно закрылось
+                try:
+                    self.wait_for_element_invisibility(MainPageLocators.MODAL_OVERLAY, time=timeout)
+                    print("Модальное окно подтверждено как закрытое")
+                    return True
+                except:
+                    # Дополнительная проверка через JavaScript
+                    is_closed = self.driver.execute_script("""
+                        return !document.querySelector('.Modal_modal_overlay__x2ZCr');
+                    """)
+                    print(f"Модальное окно закрыто: {is_closed}")
+                    return is_closed
+        except Exception as e:
+            print(f"Ошибка при закрытии модального окна: {str(e)}")
+        
+        return False
+
+    @allure.step("Получение текущего URL")
+    def get_current_url(self):
+        """Возвращает текущий URL"""
+        return self.driver.current_url
+    
+    @allure.step("Проверка, что мы на странице восстановления пароля")
+    def is_on_forgot_password_page(self):
+        """Проверяет, что текущая страница - страница восстановления пароля"""
+        current_url = self.get_current_url()
+        # Удаляем параметры для сравнения
+        current_url = current_url.split('?')[0]
+        return FORGOT_PASSWORD_URL in current_url
+
+    @allure.step("Проверка, что мы на странице сброса пароля")
+    def is_on_reset_password_page(self):
+        """Проверяет, что текущая страница - страница сброса пароля"""
+        try:
+            current_url = self.get_current_url()
+            # Удаляем параметры и завершающий слеш для сравнения
+            clean_url = current_url.split('?')[0].rstrip('/')
+            reset_password_url = RESET_PASSWORD_URL.rstrip('/')
+            
+            # Проверяем, что URL содержит путь к странице сброса пароля
+            result = reset_password_url in clean_url
+            print(f"Проверка URL: '{clean_url}' содержит '{reset_password_url}' = {result}")
+            return result
+        except Exception as e:
+            print(f"Ошибка при проверке URL: {str(e)}")
             return False

@@ -2,9 +2,15 @@ from selenium.webdriver.common.by import By
 
 class MainPageLocators:
     """Локаторы для главной страницы"""
+
+    # Соус, Начинка, Идентификатор, Резервный
+    SAUCE_COUNTER = (By.XPATH, "//h3[contains(., 'Соус')]/ancestor::a//p[contains(@class, 'counter')]")
+    FILLING_COUNTER = (By.XPATH, "//h3[contains(., 'Начинка')]/ancestor::a//p[contains(@class, 'counter')]")
+    ORDER_CONFIRMATION_NUMBER = (By.XPATH, "//h2[contains(., 'идентификатор')]/following-sibling::p")
+    ORDER_NUMBER_FALLBACK = (By.XPATH, "//p[contains(@class, 'text')]")
     
     # Кнопки
-    LOGIN_BUTTON = (By.XPATH, "//button[contains(., 'Войти')]")
+    LOGIN_BUTTON = (By.XPATH, "//button[contains(@class, 'button_button') and contains(., 'Войти')]")
     CONSTRUCTOR_BUTTON = (By.XPATH, "//a[contains(@href, '/constructor') or contains(@class, 'AppHeader_link_active')]")
     LOGO_BUTTON = (By.XPATH, "//div[contains(@class, 'AppHeader_header__logo')]//a")
     ORDER_BUTTON = (By.XPATH, "//button[contains(@class, 'button_button') and contains(., 'Оформить')]")
@@ -42,8 +48,17 @@ class MainPageLocators:
     ORDER_CONFIRMATION_NUMBER = (By.XPATH, "//p[contains(@class, 'Modal_order__number')]")
     ORDER_CONFIRMATION_TEXT = (By.XPATH, "//p[contains(., 'Ваш заказ начали готовить')]")
     
+     # Модальное окно
+    MODAL_WINDOW = (By.XPATH, "//div[contains(@class, 'Modal_modal')]")
+    MODAL_CLOSE_BUTTON = (By.XPATH, "//button[contains(@class, 'Modal_modal__close')]")
+    MODAL_OVERLAY = (By.XPATH, "//div[contains(@class, 'Modal_modal_overlay')]")
+    
     # Профиль
-    PROFILE_BUTTON = (By.CSS_SELECTOR, "a[href='/account']")
+    PROFILE_BUTTON = (By.XPATH, "//a[contains(@href, '/account')]")
+    
+    # Добавляем локатор для модального окна с предупреждением
+    WARNING_MODAL = (By.XPATH, "//div[contains(@class, 'Modal_modal_overlay')]")
+    WARNING_MODAL_CLOSE_BUTTON = (By.XPATH, "//button[contains(@class, 'Modal_modal__close')]")
 
     # Локатор для кнопки "ОК" в всплывающем окне
     OK_BUTTON = (By.XPATH, "//button[contains(., 'ОК')]")
