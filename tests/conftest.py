@@ -1,3 +1,4 @@
+import allure
 import pytest
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -10,9 +11,10 @@ from pages.forgot_password_page import ForgotPasswordPage
 from pages.profile_page import ProfilePage
 from pages.order_feed_page import OrderFeedPage
 from utils.api_helper import create_user, delete_user
-from urls import MAIN_PAGE_URL, LOGIN_URL, PROFILE_URL, FORGOT_PASSWORD_URL, RESET_PASSWORD_URL
+from urls import ORDER_FEED_URL, FORGOT_PASSWORD_URL, RESET_PASSWORD_URL
 from pages.reset_password_page import ResetPasswordPage
 
+@allure.step("Инициализация драйвера браузера")
 @pytest.fixture(params=["chrome", "firefox"])
 def driver(request):
     """Фикстура для инициализации браузера с автоматическим управлением драйверами"""
@@ -34,103 +36,81 @@ def driver(request):
         # Отключаем сохранение паролей
         options.set_preference("signon.rememberSignons", False)
         
-        # Правильно указываем путь к исполняемому файлу Firefox
-        # ВАРИАНТ 1: Для стандартной установки
-        options.binary_location = r'C:\Program Files\Mozilla Firefox\firefox.exe'
-        
-        # ВАРИАНТ 2: Если стандартный путь не работает, попробуйте этот:
-        # options.binary_location = r'C:\Users\Sokol\AppData\Local\Mozilla Firefox\firefox.exe'
-        
-        # Устанавливаем GeckoDriver через webdriver_manager
+        # Используем webdriver_manager для автоматического определения местоположения Firefox
         driver = webdriver.Firefox(
             service=FirefoxService(GeckoDriverManager().install()),
             options=options
         )
     
-    driver.implicitly_wait(10)
     yield driver
     driver.quit()
 
+@allure.step("Инициализация главной страницы")
 @pytest.fixture
 def main_page(driver):
     """Фикстура для главной страницы"""
     main_page = MainPage(driver)
-    main_page.driver.get(MAIN_PAGE_URL)
-    return main_page
+    main_page.open()
+    yield main_page
+    # Гарантированное закрытие модального окна после каждого теста
+    main_page.close_modal_if_present()
 
+@allure.step("Инициализация страницы входа")
 @pytest.fixture
-def login_page(driver):
+def login_page(driver, main_page):
     """Фикстура для страницы входа"""
-    login_page = LoginPage(driver)
-    login_page.driver.get(LOGIN_URL)
-    return login_page
-
-@pytest.fixture
-def forgot_password_page(driver, main_page, login_page):
-    """Фикстура для страницы восстановления пароля"""
     # Закрываем модальное окно, если оно есть
     main_page.close_modal_if_present()
     
     # Переходим на страницу входа
     main_page.click_login_button()
     
-    # Нажимаем на ссылку "Восстановить пароль"
-    try:
-        login_page.click_forgot_password_link()
-    except Exception as e:
-        print(f"Ошибка при переходе на страницу восстановления пароля: {str(e)}")
-        # Если переход не удался, пробуем перезагрузить страницу и повторить
-        main_page.driver.refresh()
-        main_page.click_login_button()
-        login_page.click_forgot_password_link()
+    login_page = LoginPage(driver)
+    return login_page
+
+@allure.step("Инициализация страницы восстановления пароля")
+@pytest.fixture
+def forgot_password_page(driver, main_page, login_page):
+    """Фикстура для страницы восстановления пароля"""
+    # Закрываем модальное окно, если оно есть
+    main_page.close_modal_if_present()
+    
+    # Переходим на страницу восстановления пароля
+    login_page.click_forgot_password_link()
     
     # Проверяем, что мы на нужной странице
     if not main_page.is_on_forgot_password_page():
         print(f"Не на странице восстановления пароля. Текущий URL: {main_page.driver.current_url}")
         # Попробуем перейти напрямую
-        main_page.driver.get(FORGOT_PASSWORD_URL)    
+        main_page.driver.get(FORGOT_PASSWORD_URL)
+    
     return ForgotPasswordPage(driver)
 
+@allure.step("Инициализация страницы профиля")
 @pytest.fixture
-def profile_page(driver, registered_user):
+def profile_page(driver, registered_user, main_page):
     """Фикстура для страницы профиля"""
+    # Закрываем модальное окно, если оно есть
+    main_page.close_modal_if_present()
+    
     # Логинимся
-    main_page = MainPage(driver)
-    main_page.open()
+    login_page = LoginPage(driver)
+    login_page.enter_email(registered_user["email"])
+    login_page.enter_password(registered_user["password"])
+    login_page.click_login_button()
     
-    # Проверяем, не залогинен ли уже пользователь
-    try:
-        main_page.click_login_button()
-        
-        login_page = LoginPage(driver)
-        login_page.enter_email(registered_user["email"])
-        login_page.enter_password(registered_user["password"])
-        login_page.click_login_button()
-    except:
-        # Если кнопка "Войти" не найдена, возможно, пользователь уже залогинен
-        pass
-    
-    # ВАЖНО: Закрываем модальное окно, если оно есть
+    # Закрываем модальное окно после логина, если оно появилось
     main_page.close_modal_if_present()
     
     # Переходим в профиль
     main_page.click_profile_button()
     
     # Дополнительная проверка, что мы в профиле
-    main_page.wait_for_page_load(PROFILE_URL, timeout=25)
+    assert main_page.is_on_profile_page(), "Не перешли на страницу профиля"
     
     return ProfilePage(driver)
 
-@pytest.fixture
-def order_feed_page(driver):
-    """Фикстура для ленты заказов"""
-    order_feed_page = OrderFeedPage(driver)
-    order_feed_page.open()
-    # Переходим на страницу ленты заказов
-    main_page = MainPage(driver)
-    main_page.click_order_feed_button()
-    return order_feed_page
-
+@allure.step("Создание тестового пользователя через API")
 @pytest.fixture
 def registered_user():
     """Фикстура для создания тестового пользователя через API"""
@@ -139,36 +119,12 @@ def registered_user():
     if user_data and "token" in user_data:
         delete_user(user_data["token"])
 
+@allure.step("Инициализация страницы сброса пароля")
 @pytest.fixture
-def forgot_password_page(driver, main_page, login_page):
-    """Фикстура для страницы восстановления пароля"""
-    # Закрываем модальное окно, если оно есть
-    main_page.close_modal_if_present()
-    
-    # Переходим на страницу входа
-    main_page.click_login_button()
-    
-    # Нажимаем на ссылку "Восстановить пароль"
-    login_page.click_forgot_password_link()
-    
-    return ForgotPasswordPage(driver)
-
-@pytest.fixture
-def reset_password_page(driver, main_page, forgot_password_page, registered_user):
+def reset_password_page(driver, main_page, registered_user, forgot_password_page):
     """Фикстура для страницы сброса пароля"""
     # Закрываем модальное окно, если оно есть
     main_page.close_modal_if_present()
-    
-    # Проверяем, не находимся ли мы уже на странице восстановления пароля
-    current_url = main_page.driver.current_url
-    if FORGOT_PASSWORD_URL not in current_url:
-        # Если нет, переходим на страницу входа
-        main_page.open()
-        main_page.close_modal_if_present()
-        
-        # Переходим на страницу восстановления пароля
-        login_page = LoginPage(driver)
-        login_page.click_forgot_password_link()
     
     # Вводим email и нажимаем "Восстановить"
     forgot_password_page.enter_email(registered_user["email"])
@@ -180,4 +136,63 @@ def reset_password_page(driver, main_page, forgot_password_page, registered_user
         # Попробуем перейти напрямую
         driver.get(RESET_PASSWORD_URL)
     
-    return ResetPasswordPage(driver)
+    # ПРАВИЛЬНО: используем локатор из ResetPasswordPageLocators
+    reset_page = ResetPasswordPage(driver)
+    reset_page.wait_for_password_field_to_be_visible()
+    
+    return reset_page
+
+@allure.step("Инициализация страницы ленты заказов")
+@pytest.fixture
+def order_feed_page(driver, main_page):
+    """Фикстура для страницы ленты заказов"""
+    # Закрываем модальное окно, если оно есть
+    main_page.close_modal_if_present()
+    
+    # Переходим на страницу ленты заказов
+    main_page.click_order_feed_button()
+    
+    # Проверяем, что мы на нужной странице
+    if not main_page.is_on_order_feed_page():
+        print(f"Не на странице ленты заказов. Текущий URL: {main_page.driver.current_url}")
+        # Попробуем перейти напрямую
+        driver.get(ORDER_FEED_URL)
+    
+    order_feed_page = OrderFeedPage(driver)
+    
+    # Сохраняем начальные значения счетчиков
+    try:
+        order_feed_page.initial_total_orders = order_feed_page.get_total_orders()
+        order_feed_page.initial_today_orders = order_feed_page.get_today_orders()
+    except:
+        # Если не удалось получить счетчики, устанавливаем значения по умолчанию
+        order_feed_page.initial_total_orders = 0
+        order_feed_page.initial_today_orders = 0
+    
+    return order_feed_page
+
+@allure.step("Оформление тестового заказа")
+@pytest.fixture
+def placed_order(driver, registered_user, main_page, login_page):
+    """Фикстура для оформления тестового заказа"""
+    # Логинимся
+    main_page.click_login_button()
+    login_page.enter_email(registered_user["email"])
+    login_page.enter_password(registered_user["password"])
+    login_page.click_login_button()
+    
+    # Добавляем ингредиенты
+    main_page.click_bun_item()
+    main_page.close_modal()
+    main_page.wait_for_modal_to_close()
+    main_page.click_sauce_item()
+    main_page.close_modal()
+    main_page.wait_for_modal_to_close()
+    
+    # Оформляем заказ
+    main_page.click_order_button()
+    
+    # Ждем появления номера заказа
+    order_number = main_page.get_order_number()
+    
+    yield {"number": order_number}

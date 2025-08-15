@@ -28,36 +28,33 @@ class TestRecoverPassword:
         """
         Проверяет ввод почты и клик по кнопке «Восстановить»
         """
-        # Вводим email
-        assert forgot_password_page.enter_email(registered_user["email"]), "Не удалось ввести email"
+        # ДЕЙСТВИЕ: Вводим email
+        forgot_password_page.enter_email(registered_user["email"])
         
-        # Нажимаем кнопку "Восстановить"
-        assert forgot_password_page.click_restore_button(), "Не удалось нажать кнопку 'Восстановить'"
+        # ДЕЙСТВИЕ: Нажимаем кнопку "Восстановить"
+        forgot_password_page.click_restore_button()
         
-        # Проверяем, что мы на странице ввода пароля
+        # ПРОВЕРКА: Убеждаемся, что мы на странице ввода пароля
         assert main_page.is_on_reset_password_page(), "Не перешли на страницу ввода пароля"
-    
+        
+        # ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убеждаемся, что URL содержит /reset-password
+        assert "/reset-password" in main_page.get_current_url(), "URL не содержит /reset-password"
+
     @allure.story('Работа с полем пароля')
     @allure.title('Клик по кнопке показать/скрыть пароль делает поле активным — подсвечивает его')
-    def test_click_eye_button_activates_password_field(self, forgot_password_page, registered_user, main_page, reset_password_page):
+    def test_click_eye_button_activates_password_field(self, reset_password_page):
         """
         Проверяет, что клик по кнопке показать/скрыть пароль
         делает поле активным — подсвечивает его
         """
-        # Вводим email
-        assert forgot_password_page.enter_email(registered_user["email"]), "Не удалось ввести email"
-        
-        # Нажимаем кнопку "Восстановить"
-        assert forgot_password_page.click_restore_button(), "Не удалось нажать кнопку 'Восстановить'"
-        
-        # Проверяем, что мы на странице ввода пароля
-        assert main_page.is_on_reset_password_page(), "Не перешли на страницу ввода пароля"
-        
-        # Проверяем, что поле пароля не активно изначально
+        # ПРОВЕРКА: Убеждаемся, что поле пароля не активно изначально
         assert not reset_password_page.is_password_field_active(), "Поле пароля активно до клика на кнопку 'глаз'"
         
-        # Нажимаем на кнопку "глаз"
-        assert reset_password_page.click_eye_button(), "Не удалось нажать кнопку 'глаз'"
+        # ДЕЙСТВИЕ: Нажимаем на кнопку "глаз"
+        reset_password_page.click_eye_button()
         
-        # Проверяем, что поле пароля стало активным
+        # ПРОВЕРКА: Убеждаемся, что поле пароля стало активным
         assert reset_password_page.is_password_field_active(), "Поле пароля не активировалось после клика на кнопку 'глаз'"
+        
+        # ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убеждаемся, что тип поля изменился с 'password' на 'text'
+        assert reset_password_page.get_password_field_type() == "text", "Тип поля не изменился на 'text' после клика"
